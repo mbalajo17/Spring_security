@@ -37,12 +37,7 @@ public class WebSecurityConfig {
     private Userrepo userRepository;
     @Autowired
     private JWTConfig jwtConfig;
-    private DaoAuthenticationProvider daoAuthenticationProvider;
 
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(daoAuthenticationProvider, jwtConfig, userRepository);
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -57,7 +52,7 @@ public class WebSecurityConfig {
                 ).exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(authenticationProvider(), jwtConfig, userRepository), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -80,7 +75,7 @@ public class WebSecurityConfig {
 
 
     @Bean
-    AuthenticationProvider authenticationProvider() {
+    public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
