@@ -10,6 +10,8 @@ import com.security.auth.util.JWTConfig;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,42 +38,39 @@ public class UserService {
     @Autowired
     RoleRepo roleRepo;
 
-    public User createUser(RegisterUserDto registerUserDto) {
-
-        User user = new User();
-        user.setUserName(registerUserDto.getUserName());
-        user.setMail(registerUserDto.getEmail());
-        user.setPassword(passwordEncoder.encode(registerUserDto.getPassword()));
-        if (registerUserDto.getRole() != null && registerUserDto.getRole().getId() != null) {
-            Role role = roleRepo.findById(registerUserDto.getRole().getId())
-                    .orElseThrow(() -> new RuntimeException("Role not found"));
-            user.setRole(role);
+    public ResponseEntity<User> createUser(RegisterUserDto registerUserDto) {
+        try {
+            User user = new User();
+            user.setUserName(registerUserDto.getUserName());
+            user.setMail(registerUserDto.getEmail());
+            user.setPassword(passwordEncoder.encode(registerUserDto.getPassword()));
+            if (registerUserDto.getRole() != null && registerUserDto.getRole().getId() != null) {
+                Role role = roleRepo.findById(registerUserDto.getRole().getId())
+                        .orElseThrow(() -> new RuntimeException("Role not found"));
+                user.setRole(role);
+            }
+            userrepo.save(user);
+            return ResponseEntity.ok().body(user);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        userrepo.save(user);
-        return user;
+
     }
 
 
-    public String loginUser(LoginDTO usertemp) {
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(usertemp.getEmail(),
-                usertemp.getPassword(), Collections.emptyList());
+    public ResponseEntity<String> loginUser(LoginDTO loginDTO) {
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword(), Collections.emptyList());
         try {
             Authentication authResult = authenticationManager.authenticate(authToken);
             User userDTO = (User) authResult.getPrincipal();
-
             String token = generateToken(Arrays.asList(userDTO.getAuthority()), jwtConfig, userDTO);
-            return token;
-
+            return ResponseEntity.ok().body(token);
         } catch (Exception exception) {
-            exception.printStackTrace();
-
+            return ResponseEntity.badRequest().body("USER NOT FOUND");
         }
-        return null;
     }
 
-    private String generateTokens(List<Object> asList, JWTConfig jwtConfig, User userDTO) {
-        return null;
-    }
 
     public String generateToken(List authentication, JWTConfig jwtConfig, User user) {
         long currentTime = System.currentTimeMillis();

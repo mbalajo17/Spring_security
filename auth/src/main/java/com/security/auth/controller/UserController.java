@@ -5,6 +5,7 @@ import com.security.auth.Entity.RegisterUserDto;
 import com.security.auth.Entity.User;
 import com.security.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,16 +17,12 @@ public class UserController {
     @Autowired
     UserService userService;
 
-
-
     @PostMapping("/register")
-    public User createUser(@RequestBody RegisterUserDto user ){
+    public ResponseEntity<User> createUser(@RequestBody RegisterUserDto user ){
         return userService.createUser(user);
     }
-
-
     @PostMapping("/login")
-    public String login(@RequestBody LoginDTO loginDTO ){
+    public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO ){
         return userService.loginUser(loginDTO);
     }
 }
