@@ -4,38 +4,34 @@ import com.security.auth.Entity.*;
 import com.security.auth.repo.RoleRepo;
 import com.security.auth.repo.Userrepo;
 import com.security.auth.util.JWTConfig;
+import com.security.auth.util.JWTUtils;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
     @Autowired
-    Userrepo userrepo;
+    private Userrepo userrepo;
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    JWTConfig jwtConfig;
+    private JWTConfig jwtConfig;
     @Autowired
-    RoleRepo roleRepo;
+    private RoleRepo roleRepo;
 
     public ResponseEntity<User> createUser(RegisterUserDto registerUserDto) {
         try {
@@ -53,9 +49,7 @@ public class UserService {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
     }
-
 
     public ResponseEntity<String> loginUser(LoginDTO loginDTO) {
         UsernamePasswordAuthenticationToken authToken =
@@ -63,30 +57,11 @@ public class UserService {
         try {
             Authentication authResult = authenticationManager.authenticate(authToken);
             User userDTO = (User) authResult.getPrincipal();
-            String token = generateToken(Arrays.asList(userDTO.getAuthority()), jwtConfig, userDTO);
+            String token = JWTUtils.generateToken(Arrays.asList(userDTO.getAuthority()), jwtConfig, userDTO);
             return ResponseEntity.ok().body(token);
         } catch (Exception exception) {
             return ResponseEntity.badRequest().body("USER NOT FOUND");
         }
-    }
-
-
-    public String generateToken(List authentication, JWTConfig jwtConfig, User user) {
-        long currentTime = System.currentTimeMillis();
-        Map<String, String> map = new HashMap<>();
-        map.put("userName", user.getUsername());
-        map.put("mail", user.getMail());
-        map.put("authority",user.getAuthority());
-        map.put("id", String.valueOf(user.getId()));
-
-        return Jwts.builder()
-                .setSubject(user.getMail())
-                .claim("authorities", authentication)
-                .setIssuedAt(new Date(currentTime))
-                .setExpiration(new Date(currentTime + jwtConfig.getJwtExpiration() * 1000L))
-                .signWith(SignatureAlgorithm.HS256, jwtConfig.getSecret().getBytes())
-                .setHeaderParam("users", map)
-                .compact();
     }
 
     public ResponseEntity<String> updatePassWord(UpdatePassword updatePassword) {
