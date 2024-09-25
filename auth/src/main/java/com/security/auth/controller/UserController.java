@@ -2,28 +2,31 @@ package com.security.auth.controller;
 
 import com.security.auth.Entity.LoginDTO;
 import com.security.auth.Entity.RegisterUserDto;
+import com.security.auth.Entity.UpdatePassword;
 import com.security.auth.Entity.User;
 import com.security.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
 public class UserController {
     @Autowired
     UserService userService;
 
-    @PostMapping("/register")
+    @PostMapping("/auth/register")
     public ResponseEntity<User> createUser(@RequestBody RegisterUserDto user ){
         return userService.createUser(user);
     }
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO ){
         return userService.loginUser(loginDTO);
+    }
+
+
+    @PutMapping("/updatePassword")
+    public ResponseEntity<String> updatePassword(@RequestBody UpdatePassword updatePassword){
+        return userService.updatePassWord(updatePassword);
     }
 }
 

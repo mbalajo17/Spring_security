@@ -1,9 +1,6 @@
 package com.security.auth.service;
 
-import com.security.auth.Entity.LoginDTO;
-import com.security.auth.Entity.RegisterUserDto;
-import com.security.auth.Entity.Role;
-import com.security.auth.Entity.User;
+import com.security.auth.Entity.*;
 import com.security.auth.repo.RoleRepo;
 import com.security.auth.repo.Userrepo;
 import com.security.auth.util.JWTConfig;
@@ -16,7 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -78,6 +77,7 @@ public class UserService {
         map.put("userName", user.getUsername());
         map.put("mail", user.getMail());
         map.put("authority",user.getAuthority());
+        map.put("id", String.valueOf(user.getId()));
 
         return Jwts.builder()
                 .setSubject(user.getMail())
@@ -87,5 +87,27 @@ public class UserService {
                 .signWith(SignatureAlgorithm.HS256, jwtConfig.getSecret().getBytes())
                 .setHeaderParam("users", map)
                 .compact();
+    }
+
+    public ResponseEntity<String> updatePassWord(UpdatePassword updatePassword) {
+        try {
+            User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            User user1 = userrepo.findById(user.getId()).get();
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            if (bCryptPasswordEncoder.matches(updatePassword.getNewPassword(), user1.getPassword())) {
+                return new ResponseEntity<>("Your new password cannot be same as current password!!!", HttpStatus.PRECONDITION_FAILED);
+            }
+            if (Objects.nonNull(updatePassword.getNewPassword())) {
+                user1.setPassword(bCryptPasswordEncoder.encode(updatePassword.getNewPassword()));
+                userrepo.save(user1);
+                return new ResponseEntity<>("success full update", HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.BAD_GATEWAY);
+            }
+
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 }
