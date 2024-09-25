@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.security.auth.Entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -15,12 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class JWTUtils {
-
-
-    private static SecretKey getSignInKey(String secret) {
-        byte[] bytes = Base64.getDecoder().decode(secret.getBytes(StandardCharsets.UTF_8));
-        return new SecretKeySpec(bytes, "HmacSHA256");
-    }
 
     public static String generateToken(List authentication, JWTConfig jwtConfig, User user) {
         long currentTime = System.currentTimeMillis();
@@ -35,7 +30,7 @@ public class JWTUtils {
                 .claim("authorities", authentication)
                 .issuedAt(new Date(currentTime))
                 .expiration(new Date(currentTime + jwtConfig.getJwtExpiration() * 1000L))
-                .signWith(getSignInKey(jwtConfig.getSecret()))
+                .signWith(Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8)))
                 .claim("users",map)
                 .compact();
     }
@@ -43,7 +38,7 @@ public class JWTUtils {
     public static User verify(String token, HttpServletRequest httpServletRequest, HttpServletResponse httpResponse, JWTConfig jwtConfig) {
         try {
             Claims claimsJws = Jwts.parser()
-                    .verifyWith(getSignInKey(jwtConfig.getSecret()))
+                    .verifyWith(Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8)))
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
